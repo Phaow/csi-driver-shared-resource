@@ -4,10 +4,19 @@ metadata:
   name: my-csi-app-pod
   namespace: my-csi-app-namespace
 spec:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   serviceAccountName: default
   containers:
     - name: my-frontend
       image: quay.io/quay/busybox
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
       volumeMounts:
         - mountPath: "/data"
           name: my-csi-volume

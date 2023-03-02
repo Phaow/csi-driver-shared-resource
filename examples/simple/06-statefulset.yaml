@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-sts
+  namespace: my-csi-app-namespace
+spec:
+  selector:
+    matchLabels:
+      app: my-sts
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: my-sts  
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: default
+      containers:
+        - name: my-frontend
+          image: quay.io/quay/busybox
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: "/data"
+              name: my-csi-volume
+          command:
+            - sh
+            - -c
+            - |
+              while true
+              do
+                ls -la /data
+                touch /data/foo
+                ls -la /data
+                echo "calling sleep"
+                sleep 120
+              done
+      volumes:
+        - name: my-csi-volume
+          csi:
+            readOnly: true
+            driver: csi.sharedresource.openshift.io
+            volumeAttributes:
+              sharedConfigMap: my-share-pod
